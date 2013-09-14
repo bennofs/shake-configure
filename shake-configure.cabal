@@ -1,0 +1,40 @@
+name:                shake-configure
+version:             0.1.0.0
+synopsis:            Library detection for the shake build system
+description:         A library for finding packages using pkg-config and other methods with the shake build system.
+homepage:            http://github.com/bennofs/shake-configure
+license:             MIT
+license-file:        LICENSE
+author:              Benno Fünfstück
+maintainer:          benno.fuenfstueck@gmail.com
+copyright:           © 2013 Benno Fünfstück
+category:            Distribution
+build-type:          Simple
+cabal-version:       >=1.10
+
+source-repository head
+  type: git
+  location: git://github.com/bennofs/shake-configure.git
+
+library
+  exposed-modules:
+      Shake.Configure
+    , Shake.Configure.Package
+    , Shake.Configure.PkgConfig
+    , Shake.Configure.Finder
+  build-depends: 
+      base
+    , lens
+    , attoparsec
+    , system-filepath
+    , text
+    , containers
+    , shelly
+    , shake
+    , aeson >= 0.6.2.0
+    , bytestring
+    , utf8-string
+    , transformers
+    , MaybeT
+  hs-source-dirs:      .
+  default-language:    Haskell2010
