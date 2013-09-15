@@ -4,28 +4,27 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Shake.Configure.Package where
 
-import Data.Monoid
-import Control.Lens
-import Data.Version
-import Data.Aeson
-import Data.Aeson.Types hiding (Parser)
-import Data.Aeson.TH
-import Data.Attoparsec.Text
-import Control.Applicative
-import qualified Filesystem.Path.CurrentOS as P
-import qualified Data.Text as T
+import           Control.Applicative
+import           Control.Lens
+import           Data.Aeson
+import           Data.Aeson.TH
+import           Data.Aeson.Types hiding (Parser)
+import           Data.Attoparsec.Text
 import qualified Data.Map as M
+import           Data.Monoid
+import qualified Data.Text as T
+import           Data.Version
 
 data PackageConfig = PackageConfig
-  { _includePaths :: [P.FilePath]
-  , _libraries    :: [T.Text]
+  { _includePaths :: [FilePath]
+  , _libraries    :: [String]
   , _version      :: Maybe Version
-  , _variables    :: M.Map T.Text T.Text
-  , _defines      :: M.Map T.Text T.Text
-  , _libraryPaths :: [P.FilePath]
-  , _staticFlags  :: [T.Text]
-  , _cflags       :: [T.Text]
-  , _lflags       :: [T.Text]
+  , _variables    :: M.Map String String
+  , _defines      :: M.Map String String
+  , _libraryPaths :: [FilePath]
+  , _staticFlags  :: [String]
+  , _cflags       :: [String]
+  , _lflags       :: [String]
   } deriving (Show)
 makeLenses ''PackageConfig
 
@@ -39,15 +38,29 @@ instance FromJSON Version where
     _ -> fail $ "Invalid version string: " <> T.unpack a
   parseJSON o = typeMismatch "version string" o
 
-instance ToJSON P.FilePath where toJSON = String . either (error "Failed to decode file path") id . P.toText
-instance FromJSON P.FilePath where parseJSON = withText "file path string" $ pure . P.fromText
-
 deriveJSON defaultOptions
   { fieldLabelModifier = drop 1
   } ''PackageConfig
 
 reviewEmpty :: Monoid s => Lens s t a b -> b -> t
 reviewEmpty l v = mempty & l .~ v
+
+getCompilerFlags :: PackageConfig -> [String]
+getCompilerFlags config = mconcat
+  [ config ^.. includePaths . traverse . flag "-I"
+  , config ^.. defines . itraversed . withIndex . to define
+  , config ^.. cflags . traverse
+  ]
+  where flag f g v = coerce $ traverse g [f,v]
+        define (k,v) = "-D" <> k <> "=" <> v
+
+getLinkerFlags :: PackageConfig -> [String]
+getLinkerFlags config = mconcat
+  [ config ^.. libraries . traverse . flag "-l"
+  , config ^.. libraryPaths . traverse . flag "-L"
+  , config ^.. lflags . traverse
+  ]
+  where flag f g v = coerce $ traverse g [f,v]
 
 instance Monoid PackageConfig where
   mempty = PackageConfig mempty mempty Nothing mempty mempty mempty mempty mempty mempty
