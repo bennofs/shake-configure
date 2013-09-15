@@ -31,12 +31,13 @@ findPackages :: FilePath      -- ^ Path under which to cache the configure resul
              -> Rules Config  -- ^ Configuration handle
 findPackages cachePrefix pkgs = fmap (const $ Config cachePrefix pkgs) $ for_ pkgs $ \(pkgName, findPkg) ->
   cachePrefix ++ "/" ++ pkgName ++ ".info" *> \out -> do
-    x <- traced ("# Configure| Looking for " ++ pkgName) $ tryFindMethod findPkg
+    putNormal $ "|Configure| Looking for " ++ pkgName
+    x <- liftIO $ tryFindMethod findPkg
     case x of
       Just x' -> do
-        putNormal $ "# Configure| Found " ++ pkgName
+        putNormal $ "|Configure| Found " ++ pkgName
         writeFileChanged out (U.toString $ encode x')
-      _ -> error $ "# Configure| " ++ pkgName ++ " not found"
+      _ -> error $ "|Configure| " ++ pkgName ++ " not found"
 
 -- | Access a field of a package. Throws an error if the package wasn't found.
 withPackage :: Config              -- ^ A config handle obtained by calling 'findPackages'
